@@ -1,4 +1,4 @@
-from conans import ConanFile, tools
+from conans import ConanFile, CMake, tools
 from conans.errors import ConanInvalidConfiguration
 import os
 
@@ -12,8 +12,15 @@ class VincentlaucsbCsvParserConan(ConanFile):
     url = "https://github.com/conan-io/conan-center-index"
     homepage = "https://github.com/vincentlaucsb/csv-parser"
     license = "MIT"
-    settings = "os", "compiler"
+    settings = "os", "arch", "compiler", "build_type"
     no_copy_source = True
+    generators = "cmake"
+
+    exports_sources = "CMakeLists.txt"
+
+    options = {"header_only": [True, False]}
+
+    default_options = {"header_only": False}
 
     @property
     def _source_subfolder(self):
@@ -29,15 +36,32 @@ class VincentlaucsbCsvParserConan(ConanFile):
             raise ConanInvalidConfiguration("gcc version < 7 not supported")
 
     def package_id(self):
-        self.info.header_only()
+        if self.options.header_only:
+            self.info.header_only()
 
     def source(self):
         tools.get(**self.conan_data["sources"][self.version], strip_root=True, destination=self._source_subfolder)
 
+    def build(self):
+        if not self.options.header_only:
+            cmake = CMake(self)
+            cmake.configure()
+            cmake.build()
+
     def package(self):
         self.copy(pattern="LICENSE", dst="licenses", src=self._source_subfolder)
-        self.copy(pattern="*", dst="include", src=os.path.join(self._source_subfolder, "single_include"))
+        if self.options.header_only:
+            self.copy(pattern="*", dst="include", src=os.path.join(self._source_subfolder, "single_include"))
+        else:
+            self.copy(pattern="*.h", dst="include", src=os.path.join(self._source_subfolder, "include"))
+            self.copy(pattern="*.hpp", dst="include", src=os.path.join(self._source_subfolder, "include"))
+
+            _src = os.path.join(self._source_subfolder, "include", "internal")
+            self.copy(pattern="*.a", dst="lib", src=_src, keep_path=False)
+            self.copy(pattern="*.lib", dst="lib", src=_src, keep_path=False)
 
     def package_info(self):
+        self.cpp_info.libs = ["csv"]
+
         if self.settings.os in ("Linux", "FreeBSD"):
             self.cpp_info.system_libs.append("pthread")
