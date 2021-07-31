@@ -13,7 +13,6 @@ class VincentlaucsbCsvParserConan(ConanFile):
     homepage = "https://github.com/vincentlaucsb/csv-parser"
     license = "MIT"
     settings = "os", "arch", "compiler", "build_type"
-    no_copy_source = True
     generators = "cmake"
 
     exports_sources = "CMakeLists.txt"
@@ -56,9 +55,8 @@ class VincentlaucsbCsvParserConan(ConanFile):
             self.copy(pattern="*.h", dst="include", src=os.path.join(self._source_subfolder, "include"))
             self.copy(pattern="*.hpp", dst="include", src=os.path.join(self._source_subfolder, "include"))
 
-            _src = os.path.join(self._source_subfolder, "include", "internal")
-            self.copy(pattern="*.a", dst="lib", src=_src, keep_path=False)
-            self.copy(pattern="*.lib", dst="lib", src=_src, keep_path=False)
+            self.copy(pattern="*.a", dst="lib", src="lib")
+            self.copy(pattern="*.lib", dst="lib", src="lib")
 
     def package_info(self):
         self.cpp_info.libs = ["csv"]
